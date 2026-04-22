@@ -1,0 +1,23 @@
+name: Build IPA Tarab
+on:
+  push:
+    branches: [ main ] # سيعمل المصنع بمجرد رفع الكود لفرع main
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+      - name: Build IPA
+        run: |
+          xcodebuild -project Feather.xcodeproj -scheme Feather -sdk iphoneos -configuration Release archive -archivePath build/Feather.xcarchive
+          mkdir -p build/Payload
+          cp -r build/Feather.xcarchive/Products/Applications/*.app build/Payload
+          cd build && zip -r IPA-Tarab.ipa Payload
+      - name: Upload IPA
+        uses: actions/upload-artifact@v3
+        with:
+          name: IPA-Tarab-Package
+          path: build/IPA-Tarab.ipa
