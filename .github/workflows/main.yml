@@ -1,25 +1,46 @@
-name: IPA Tarab Builder
+name: IPA Tarab Auto Builder
 on:
-  workflow_dispatch: # يتيح لك تشغيل البناء يدوياً بضغطة زر
+  push:
+    branches: [ main ] # يعمل تلقائياً عند رفع الكود
+  workflow_dispatch: # يتيح لك التشغيل يدوياً أيضاً
 
 jobs:
   build:
-    runs-on: macos-13
+    # استخدام latest لضمان الحصول على أسرع خادم متاح
+    runs-on: macos-latest
+    
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_15.0.app
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Build IPA
+      - name: Setup Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_15.2.app
+
+      - name: Install Dependencies
         run: |
-          xcodebuild archive -project Feather.xcodeproj -scheme Feather -archivePath build/Feather.xcarchive -sdk iphoneos -configuration Release CODE_SIGNING_ALLOWED=NO
+          # إضافة أي مستلزمات يحتاجها مشروع Feather
+          swift --version
+
+      - name: Build and Archive
+        run: |
+          xcodebuild archive \
+            -project Feather.xcodeproj \
+            -scheme Feather \
+            -archivePath build/Feather.xcarchive \
+            -sdk iphoneos \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Create IPA Package
+        run: |
           mkdir -p build/Payload
           cp -r build/Feather.xcarchive/Products/Applications/*.app build/Payload
-          cd build && zip -r IPATarab.ipa Payload
+          cd build && zip -vr IPATarab.ipa Payload
           
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload Final IPA
+        uses: actions/upload-artifact@v4
         with:
-          name: IPATarab-File
+          name: IPA-Tarab-Edition
           path: build/IPATarab.ipa
+          retention-days: 5
